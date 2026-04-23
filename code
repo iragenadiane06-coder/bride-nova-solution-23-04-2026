@@ -1,0 +1,73 @@
+const int doorSensorPin = 3;     
+const int resetButtonPin = 2;    
+const int redLedPin =7 ;         // Alarm LED
+const int greenLedPin = 8;       // Status LED
+const int buzzerPin = 6;         // Alarm buzzer
+const int ldrPin = A0;           // Light sensor (Photoresistor)
+
+bool alarmActive = false;
+
+void setup() {
+  pinMode(doorSensorPin, INPUT_PULLUP);   // Button with pull-up
+  pinMode(resetButtonPin, INPUT_PULLUP);
+  pinMode(redLedPin, OUTPUT);
+  pinMode(greenLedPin, OUTPUT);
+  pinMode(buzzerPin, OUTPUT);
+
+  Serial.begin(9600);
+  Serial.println("MONITORING ACTIVE");
+}
+
+void loop() {
+  int ldrValue = analogRead(ldrPin);
+  bool doorPressed = digitalRead(doorSensorPin) == LOW;   // pressed = intruder
+  bool resetPressed = digitalRead(resetButtonPin) == LOW;
+
+  if (!alarmActive) {
+    // Monitoring mode
+    if (ldrValue > 600) {
+      // Night mode
+      Serial.println("NIGHT MODE ON");
+      digitalWrite(greenLedPin, HIGH);
+      delay(500);
+      digitalWrite(greenLedPin, LOW);
+      delay(500);
+    } else {
+      // Normal monitoring
+      digitalWrite(greenLedPin, HIGH);
+    }
+
+    if (doorPressed) {
+      // Intruder detected
+      alarmActive = true;
+      Serial.println("INTRUDER DETECTED");
+      triggerAlarm();
+    }
+  } else {
+    // Alarm is active
+    if (resetPressed) {
+      alarmActive = false;
+      digitalWrite(redLedPin, LOW);
+      digitalWrite(buzzerPin, LOW);
+      Serial.println("SYSTEM RESET");
+      Serial.println("MONITORING ACTIVE");
+    }
+  }
+}
+
+void triggerAlarm() {
+  // Flash red LED rapidly 10 times with buzzer
+  for (int i = 0; i < 10; i++) {
+    digitalWrite(redLedPin, HIGH);
+    digitalWrite(buzzerPin, HIGH);
+    delay(100);
+    digitalWrite(redLedPin, LOW);
+    digitalWrite(buzzerPin, LOW);
+    delay(100);
+  }
+  // Keep LED and buzzer ON solid
+  digitalWrite(redLedPin, HIGH);
+  digitalWrite(buzzerPin, HIGH);
+  // Turn off green LED
+  digitalWrite(greenLedPin, LOW);
+}
